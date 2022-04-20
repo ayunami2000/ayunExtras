@@ -1,0 +1,7 @@
+name: ayunExtras
+version: '${project.version}'
+main: me.ayunami2000.ayunextras.AyunExtras
+api-version: 1.17
+load: STARTUP
+authors: [ ayunami2000 ]
+description: extras for my kaboom clone
