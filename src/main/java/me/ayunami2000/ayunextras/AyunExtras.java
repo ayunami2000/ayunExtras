@@ -1,5 +1,8 @@
 package me.ayunami2000.ayunextras;
 
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
@@ -17,10 +20,20 @@ public final class AyunExtras extends JavaPlugin implements Listener {
     @Override
     public void onEnable() {
         this.getServer().getPluginManager().registerEvents(this, this);
+        this.getCommand("boost").setExecutor(this);
     }
 
     @Override
     public void onDisable() {}
+
+    @Override
+    public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+        if (sender instanceof Player) {
+            Player player = (Player) sender;
+            player.setVelocity(player.getVelocity().clone().add(player.getEyeLocation().getDirection()));
+        }
+        return true;
+    }
 
     @EventHandler
     public void onPlayerCommand(PlayerCommandPreprocessEvent event) {
