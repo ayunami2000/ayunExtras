@@ -48,7 +48,11 @@ public class Discord {
                 consoleChannel.addMessageCreateListener(messageCreateEvent -> {
                     MessageAuthor messageAuthor = messageCreateEvent.getMessageAuthor();
                     if (!messageAuthor.isYourself()) {
-                        Bukkit.getScheduler().scheduleSyncDelayedTask(AyunExtras.INSTANCE, () -> Bukkit.getServer().dispatchCommand(Bukkit.getConsoleSender(), messageCreateEvent.getMessageContent()));
+                        Bukkit.getScheduler().scheduleSyncDelayedTask(AyunExtras.INSTANCE, () -> {
+                            for (String cmd : messageCreateEvent.getMessageContent().split("\n")) {
+                                Bukkit.getServer().dispatchCommand(Bukkit.getConsoleSender(), cmd);
+                            }
+                        });
                         messageCreateEvent.deleteMessage();
                     }
                 });
@@ -86,7 +90,9 @@ public class Discord {
 
     private void sendChatQueue() {
         if (msgQueue.size() > 0) {
-            chatChannel.sendMessage(String.join("\n", msgQueue));
+            String fullMsg = String.join("\n", msgQueue);
+            if (fullMsg.length() > 1997) fullMsg = fullMsg.substring(0, 1997) + "...";
+            chatChannel.sendMessage(fullMsg);
             msgQueue.clear();
         }
     }
@@ -99,8 +105,9 @@ public class Discord {
             for (Player player : players) {
                 topic.append(player.getName()).append(", ");
             }
+            boolean weirdCase = topic.length() == 1997;
             topic.setLength(Math.min(1997, topic.length() - 2));
-            if (topic.length() == 1997) {
+            if (topic.length() == 1997 && !weirdCase) {
                 topic.append("...");
             }
             statusMessage.edit("**Players**" + filterMsg(topic.toString()));
