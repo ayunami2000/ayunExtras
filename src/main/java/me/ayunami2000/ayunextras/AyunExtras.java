@@ -3,6 +3,7 @@ package me.ayunami2000.ayunextras;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.server.ServerCommandEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -29,6 +30,11 @@ public final class AyunExtras extends JavaPlugin implements Listener {
     @EventHandler
     public void onConsoleCommand(ServerCommandEvent event) {
         if (isIllegal(event.getCommand())) event.setCancelled(true);
+    }
+
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        event.getPlayer().getInventory().clear();
     }
 
     private boolean isIllegal(String cmd) {

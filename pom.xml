@@ -71,12 +71,5 @@
             <version>1.17.1-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>dont.care</groupId>
-            <artifactId>didnt-ask</artifactId>
-            <version>1.0</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/spigot-1.17.1.jar</systemPath>
-        </dependency>
     </dependencies>
 </project>
