@@ -1,0 +1,12 @@
+# discord integration
+discord:
+  # enabled?
+  enabled: false
+  # bot token
+  token: ""
+  # chat channel id
+  chat: ""
+  # console channel id
+  console: ""
+  # status channel id
+  status: ""

@@ -5,6 +5,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.server.ServerCommandEvent;
@@ -17,8 +18,22 @@ public final class AyunExtras extends JavaPlugin implements Listener {
     private static final Pattern transMatch1 = Pattern.compile("[\"']translate[\"']:\"(?:(?:[^\"\\\\])|\\\\.)*\"", Pattern.CASE_INSENSITIVE);
     private static final Pattern transMatch2 = Pattern.compile("[\"']translate[\"']:'(?:(?:[^'\\\\])|\\\\.)*'", Pattern.CASE_INSENSITIVE);
 
+    private Discord discord = null;
+
+    public static AyunExtras INSTANCE;
+
+    @Override
+    public void onLoad() {
+        INSTANCE = this;
+    }
+
     @Override
     public void onEnable() {
+        this.saveDefaultConfig();
+        if (this.getConfig().getBoolean("discord.enabled")) {
+            discord = new Discord(this.getConfig().getString("discord.token"), this.getConfig().getString("discord.chat"), this.getConfig().getString("discord.console"), this.getConfig().getString("discord.status"));
+            if (discord.api == null) discord = null;
+        }
         this.getServer().getPluginManager().registerEvents(this, this);
         this.getCommand("boost").setExecutor(this);
         this.getServer().getScheduler().scheduleSyncDelayedTask(this, () -> this.getServer().broadcastMessage("&d&lServer will restart in &9&l&n15&d&l minutes!"), (3 * 60 + 45) * 60 * 20);
@@ -30,13 +45,28 @@ public final class AyunExtras extends JavaPlugin implements Listener {
     }
 
     @Override
-    public void onDisable() {}
+    public void onDisable() {
+        this.getServer().getScheduler().cancelTasks(this);
+        if (discord != null) {
+            discord.end();
+        }
+    }
+
+    @EventHandler
+    public void onPlayerChat(AsyncPlayerChatEvent event) {
+        if (discord != null) {
+            discord.sendChat(event.getPlayer().getName(), event.getMessage());
+        }
+    }
 
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-        if (sender instanceof Player) {
-            Player player = (Player) sender;
-            player.setVelocity(player.getVelocity().clone().add(player.getEyeLocation().getDirection()));
+        String cmdName = cmd.getName();
+        if (cmdName.equals("boost")) {
+            if (sender instanceof Player) {
+                Player player = (Player) sender;
+                player.setVelocity(player.getVelocity().clone().add(player.getEyeLocation().getDirection()));
+            }
         }
         return true;
     }
@@ -57,7 +87,7 @@ public final class AyunExtras extends JavaPlugin implements Listener {
     }
 
     private boolean isIllegal(String cmd) {
-        String trimMsg = UnicodeEscaper.unescapeJavaString(cmd.replace(" ",""));
+        String trimMsg = parseCharCodes(cmd.replace(" ",""));
         Matcher matcher1 = transMatch1.matcher(trimMsg);
         Matcher matcher2 = transMatch2.matcher(trimMsg);
         boolean illegal = false;
@@ -78,5 +108,27 @@ public final class AyunExtras extends JavaPlugin implements Listener {
             }
         }
         return illegal;
+    }
+
+    // from kaboom extras
+    private String parseCharCodes(final String input) {
+        if (input.contains("\\u")) {
+            StringBuilder output = new StringBuilder();
+            String[] split = input.split("\\\\u");
+            int index = 0;
+            for (String item:split) {
+                if (index == 0) {
+                    output.append(item);
+                } else {
+                    String charCode = item.substring(0, 4);
+                    output.append((char) Integer.parseInt(charCode, 16));
+                    output.append(item.substring(4));
+                }
+                index++;
+            }
+            return output.toString();
+        } else {
+            return input;
+        }
     }
 }
