@@ -21,6 +21,12 @@ public final class AyunExtras extends JavaPlugin implements Listener {
     public void onEnable() {
         this.getServer().getPluginManager().registerEvents(this, this);
         this.getCommand("boost").setExecutor(this);
+        this.getServer().getScheduler().scheduleSyncDelayedTask(this, () -> this.getServer().broadcastMessage("&d&lServer will restart in &9&l&n15&d&l minutes!"), (3 * 60 + 45) * 60 * 20);
+        this.getServer().getScheduler().scheduleSyncDelayedTask(this, () -> this.getServer().broadcastMessage("&d&lServer will restart in &9&l&n10&d&l minutes!"), (3 * 60 + 50) * 60 * 20);
+        this.getServer().getScheduler().scheduleSyncDelayedTask(this, () -> this.getServer().broadcastMessage("&d&lServer will restart in &9&l&n5&d&l minutes!"), (3 * 60 + 55) * 60 * 20);
+        this.getServer().getScheduler().scheduleSyncDelayedTask(this, () -> this.getServer().broadcastMessage("&d&lServer will restart in &9&l&n2&d&l minutes!"), (3 * 60 + 58) * 60 * 20);
+        this.getServer().getScheduler().scheduleSyncDelayedTask(this, () -> this.getServer().broadcastMessage("&d&lServer will restart in &9&l&n1&d&l minute!"), (3 * 60 + 59) * 60 * 20);
+        this.getServer().getScheduler().scheduleSyncDelayedTask(this, () -> this.getServer().broadcastMessage("&d&lServer will restart &9&l&nany second now&d&l!"), 4 * 60 * 60 * 20);
     }
 
     @Override
