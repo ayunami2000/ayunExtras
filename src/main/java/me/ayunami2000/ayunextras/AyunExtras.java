@@ -1,5 +1,6 @@
 package me.ayunami2000.ayunextras;
 
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
@@ -46,6 +47,10 @@ public final class AyunExtras extends JavaPlugin implements Listener {
         this.getServer().getScheduler().scheduleSyncDelayedTask(this, () -> this.getServer().broadcastMessage("&d&lServer will restart &9&l&nany second now&d&l!"), 4 * 60 * 60 * 20);
     }
 
+    private void kickPlayer(Player player) {
+        Bukkit.getScheduler().scheduleSyncDelayedTask(AyunExtras.INSTANCE, () -> player.kickPlayer(""));
+    }
+
     private void loadConfig() {
         kickChats.clear();
         List<String> kickChatsRaw = this.getConfig().getStringList("kickChats");
@@ -69,7 +74,7 @@ public final class AyunExtras extends JavaPlugin implements Listener {
         String playerName = event.getPlayer().getName();
         for (Pattern blockName : blockNames) {
             if (blockName.matcher(playerName).matches()) {
-                event.getPlayer().kickPlayer("");
+                kickPlayer(event.getPlayer());
                 event.disallow(PlayerLoginEvent.Result.KICK_OTHER, "");
             }
         }
@@ -91,7 +96,7 @@ public final class AyunExtras extends JavaPlugin implements Listener {
     @EventHandler
     public void onPlayerChat(AsyncPlayerChatEvent event) {
         if (kickChatMatches(event.getMessage())) {
-            event.getPlayer().kickPlayer("");
+            kickPlayer(event.getPlayer());
             event.setCancelled(true);
             return;
         }
@@ -118,18 +123,19 @@ public final class AyunExtras extends JavaPlugin implements Listener {
         } else if (cmdName.equals("ayunkick") && sender instanceof ConsoleCommandSender) {
             if (args.length == 0) {
                 for (Player player : this.getServer().getOnlinePlayers()) {
-                    player.kickPlayer("");
+                    kickPlayer(player);
                 }
             } else {
                 for (String playerName : args) {
                     Player player = this.getServer().getPlayer(playerName);
-                    if (player != null) player.kickPlayer("");
+                    if (player != null) kickPlayer(player);
                 }
             }
         } else if (cmdName.equals("ayunrl") && sender instanceof ConsoleCommandSender) {
             this.reloadConfig();
+            loadConfig();
         } else if (cmdName.equals("register") && sender instanceof Player) {
-            ((Player) sender).kickPlayer("");
+            kickPlayer((Player) sender);
         }
         return true;
     }
@@ -137,7 +143,7 @@ public final class AyunExtras extends JavaPlugin implements Listener {
     @EventHandler
     public void onPlayerCommand(PlayerCommandPreprocessEvent event) {
         if (kickChatMatches(event.getMessage())) {
-            event.getPlayer().kickPlayer("");
+            kickPlayer(event.getPlayer());
             event.setCancelled(true);
             return;
         }
