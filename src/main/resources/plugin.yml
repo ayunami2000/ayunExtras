@@ -9,3 +9,12 @@ commands:
   boost:
     description: ayunami2000's fun boost command!
     usage: /<command>
+  ayunkick:
+    description: only dumbasses forget to register their commands!
+    usage: /<command>
+  ayunrl:
+    description: reload config for funi
+    usage: /<command>
+  register:
+    description: Register to this server!
+    usage: /<command>

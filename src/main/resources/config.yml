@@ -10,3 +10,9 @@ discord:
   console: ""
   # status channel id
   status: ""
+# regex kick chats
+kickChats:
+  - "dsc\\(?.\\(?gg/(?:2ch|matrix_v2)"
+# regex blocked usernames
+blockUsernames:
+  - "\\d{10}"
