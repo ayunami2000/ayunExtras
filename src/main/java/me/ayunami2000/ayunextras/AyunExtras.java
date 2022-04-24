@@ -24,6 +24,7 @@ public final class AyunExtras extends JavaPlugin implements Listener {
     private Discord discord = null;
 
     private final Set<Pattern> kickChats = new HashSet<>();
+    private final Set<Pattern> blockChats = new HashSet<>();
     private final Set<Pattern> blockNames = new HashSet<>();
 
     public static AyunExtras INSTANCE;
@@ -56,6 +57,11 @@ public final class AyunExtras extends JavaPlugin implements Listener {
         List<String> kickChatsRaw = this.getConfig().getStringList("kickChats");
         for (String kickChatRaw : kickChatsRaw) {
             kickChats.add(Pattern.compile(kickChatRaw, Pattern.CASE_INSENSITIVE));
+        }
+        blockChats.clear();
+        List<String> blockChatsRaw = this.getConfig().getStringList("blockChats");
+        for (String blockChatRaw : blockChatsRaw) {
+            blockChats.add(Pattern.compile(blockChatRaw, Pattern.CASE_INSENSITIVE));
         }
         blockNames.clear();
         List<String> blockNamesRaw = this.getConfig().getStringList("blockUsernames");
@@ -100,14 +106,27 @@ public final class AyunExtras extends JavaPlugin implements Listener {
             event.setCancelled(true);
             return;
         }
+        if (blockChatMatches(event.getMessage())) {
+            event.setCancelled(true);
+            return;
+        }
         if (discord != null) {
             discord.sendChat(event.getPlayer().getName(), event.getMessage());
         }
     }
 
     private boolean kickChatMatches(String in) {
+        in = parseCharCodes(in);
         for (Pattern kickChat : kickChats) {
-            if (kickChat.matcher(in).lookingAt()) return true;
+            if (kickChat.matcher(in).find()) return true;
+        }
+        return false;
+    }
+
+    private boolean blockChatMatches(String in) {
+        in = parseCharCodes(in);
+        for (Pattern blockChat : blockChats) {
+            if (blockChat.matcher(in).find()) return true;
         }
         return false;
     }
@@ -147,11 +166,19 @@ public final class AyunExtras extends JavaPlugin implements Listener {
             event.setCancelled(true);
             return;
         }
+        if (blockChatMatches(event.getMessage())) {
+            event.setCancelled(true);
+            return;
+        }
         if (isIllegal(event.getMessage())) event.setCancelled(true);
     }
 
     @EventHandler
     public void onConsoleCommand(ServerCommandEvent event) {
+        if (kickChatMatches(event.getCommand()) || blockChatMatches(event.getCommand())) {
+            event.setCancelled(true);
+            return;
+        }
         if (isIllegal(event.getCommand())) event.setCancelled(true);
     }
 
