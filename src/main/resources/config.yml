@@ -19,6 +19,7 @@ kickChats:
 blockChats:
   - "@e"
   - "@a.*@a.*@a"
+  - "^\\/?(?:essentials:)?e?sudo \\*"
 # regex blocked usernames
 blockUsernames:
   - "\\d{10}"

@@ -153,8 +153,6 @@ public final class AyunExtras extends JavaPlugin implements Listener {
         } else if (cmdName.equals("ayunrl") && sender instanceof ConsoleCommandSender) {
             this.reloadConfig();
             loadConfig();
-        } else if (cmdName.equals("register") && sender instanceof Player) {
-            kickPlayer((Player) sender);
         }
         return true;
     }

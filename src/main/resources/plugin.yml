@@ -15,6 +15,3 @@ commands:
   ayunrl:
     description: reload config for funi
     usage: /<command>
-  register:
-    description: Register to this server!
-    usage: /<command>
