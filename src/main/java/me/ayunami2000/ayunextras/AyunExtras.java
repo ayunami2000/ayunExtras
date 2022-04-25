@@ -1,6 +1,7 @@
 package me.ayunami2000.ayunextras;
 
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
@@ -27,6 +28,9 @@ public final class AyunExtras extends JavaPlugin implements Listener {
     private final Set<Pattern> blockChats = new HashSet<>();
     private final Set<Pattern> blockNames = new HashSet<>();
 
+    private boolean captcha = true;
+    private Set<Captcha> captchas = new HashSet<>();
+
     public static AyunExtras INSTANCE;
 
     @Override
@@ -40,6 +44,9 @@ public final class AyunExtras extends JavaPlugin implements Listener {
         loadConfig();
         this.getServer().getPluginManager().registerEvents(this, this);
         this.getCommand("boost").setExecutor(this);
+        this.getCommand("ayunkick").setExecutor(this);
+        this.getCommand("ayunrl").setExecutor(this);
+        this.getCommand("ayuncap").setExecutor(this);
         this.getServer().getScheduler().scheduleSyncDelayedTask(this, () -> this.getServer().broadcastMessage("§d§lServer will restart in §9§l§n15§d§l minutes!"), (3 * 60 + 45) * 60 * 20);
         this.getServer().getScheduler().scheduleSyncDelayedTask(this, () -> this.getServer().broadcastMessage("§d§lServer will restart in §9§l§n10§d§l minutes!"), (3 * 60 + 50) * 60 * 20);
         this.getServer().getScheduler().scheduleSyncDelayedTask(this, () -> this.getServer().broadcastMessage("§d§lServer will restart in §9§l§n5§d§l minutes!"), (3 * 60 + 55) * 60 * 20);
@@ -53,6 +60,8 @@ public final class AyunExtras extends JavaPlugin implements Listener {
     }
 
     private void loadConfig() {
+        captcha = this.getConfig().getBoolean("captcha");
+        if (!captcha) captchas.clear();
         kickChats.clear();
         List<String> kickChatsRaw = this.getConfig().getStringList("kickChats");
         for (String kickChatRaw : kickChatsRaw) {
@@ -101,8 +110,13 @@ public final class AyunExtras extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onPlayerChat(AsyncPlayerChatEvent event) {
+        Player player = event.getPlayer();
+        if (!captchaChecker(player, event.getMessage())) {
+            event.setCancelled(true);
+            return;
+        }
         if (kickChatMatches(event.getMessage())) {
-            kickPlayer(event.getPlayer());
+            kickPlayer(player);
             event.setCancelled(true);
             return;
         }
@@ -111,7 +125,7 @@ public final class AyunExtras extends JavaPlugin implements Listener {
             return;
         }
         if (discord != null) {
-            discord.sendChat(event.getPlayer().getName(), event.getMessage());
+            discord.sendChat(player.getName(), event.getMessage());
         }
     }
 
@@ -153,14 +167,46 @@ public final class AyunExtras extends JavaPlugin implements Listener {
         } else if (cmdName.equals("ayunrl") && sender instanceof ConsoleCommandSender) {
             this.reloadConfig();
             loadConfig();
+        } else if (cmdName.equals("ayuncap") && sender instanceof ConsoleCommandSender) {
+            captcha = !captcha;
+            this.getConfig().set("captcha", captcha);
+            this.saveConfig();
+        }
+        return true;
+    }
+
+    private boolean captchaChecker(Player player, String msg) {
+        if (captcha) {
+            Captcha cap = Captcha.get(captchas, player);
+            if (cap != null) {
+                if (cap.check(msg)) {
+                    if (!cap.passed1) {
+                        cap.passed1 = true;
+                        player.sendMessage("1/2 cap done");
+                    } else {
+                        captchas.remove(cap);
+                        Bukkit.getScheduler().scheduleSyncDelayedTask(this, () -> player.setGameMode(GameMode.CREATIVE));
+                        player.sendMessage("you may now play on the server!");
+                    }
+                } else {
+                    captchas.remove(cap); // might need to be run after the kick which is delayed
+                    kickPlayer(player);
+                }
+                return false;
+            }
         }
         return true;
     }
 
     @EventHandler
     public void onPlayerCommand(PlayerCommandPreprocessEvent event) {
+        Player player = event.getPlayer();
+        if (!captchaChecker(player, event.getMessage())) {
+            event.setCancelled(true);
+            return;
+        }
         if (kickChatMatches(event.getMessage())) {
-            kickPlayer(event.getPlayer());
+            kickPlayer(player);
             event.setCancelled(true);
             return;
         }
@@ -181,8 +227,20 @@ public final class AyunExtras extends JavaPlugin implements Listener {
     }
 
     @EventHandler
+    public void onPlayerGameModeChange(PlayerGameModeChangeEvent event) {
+        if (captcha && Captcha.get(captchas, event.getPlayer()) != null) event.setCancelled(true);
+    }
+
+    @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
-        event.getPlayer().getInventory().clear();
+        Player player = event.getPlayer();
+        if (captcha) {
+            player.setGameMode(GameMode.SPECTATOR);
+            captchas.add(new Captcha(player));
+        } else {
+            player.setGameMode(GameMode.CREATIVE);
+        }
+        player.getInventory().clear();
     }
 
     private boolean isIllegal(String cmd) {

@@ -10,6 +10,8 @@ discord:
   console: ""
   # status channel id
   status: ""
+# captcha mode
+captcha: false
 # regex kick chats
 kickChats:
   - "dsc\\(?.\\(?gg\\/(?:2ch|matrix_v2)"

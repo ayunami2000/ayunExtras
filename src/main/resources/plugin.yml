@@ -15,3 +15,6 @@ commands:
   ayunrl:
     description: reload config for funi
     usage: /<command>
+  ayuncap:
+    description: toggle captcha mode
+    usage: /<command>
