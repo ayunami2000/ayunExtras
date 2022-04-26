@@ -10,6 +10,7 @@ import org.javacord.api.entity.message.MessageAttachment;
 import org.javacord.api.entity.message.MessageAuthor;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -21,7 +22,7 @@ public class Discord {
     private ServerTextChannel statusChannel = null;
     private Message statusMessage = null;
 
-    public Discord(String token, String chatId, String consoleId, String statusId) {
+    public Discord(String token, String chatId, String consoleId, String statusId, List<String> safeUsers) {
         try {
             api = new DiscordApiBuilder().setToken(token).login().join();
 
@@ -30,15 +31,31 @@ public class Discord {
                 chatChannel.addMessageCreateListener(messageCreateEvent -> {
                     MessageAuthor messageAuthor = messageCreateEvent.getMessageAuthor();
                     if (!messageAuthor.isYourself()) {
-                        StringBuilder out = new StringBuilder("§9§l[§3§lDiscord§9§l] §c");
-                        out.append(messageAuthor.getDisplayName()).append("§r: ");
-                        out.append(messageCreateEvent.getMessageContent());
+                        String messageContent = messageCreateEvent.getMessageContent();
+                        if (messageContent.toLowerCase().startsWith("ayun!")) {
+                            String[] pieces = messageContent.substring(5).split(" ");
+                            switch (pieces[0].toLowerCase()) {
+                                case "kick":
+                                case "kickall":
+                                    if (safeUsers.contains(messageAuthor.getIdAsString())) AyunExtras.INSTANCE.kickCmd(Arrays.copyOfRange(pieces, 1, pieces.length));
+                                    break;
+                                case "cap":
+                                case "captcha":
+                                    if (safeUsers.contains(messageAuthor.getIdAsString())) messageCreateEvent.getMessage().reply("**Captchas are now " + (AyunExtras.INSTANCE.toggleCaptcha() ? "en" : "dis") + "abled.**");
+                                    break;
+                                default:
+                            }
+                        } else {
+                            StringBuilder out = new StringBuilder("§9§l[§3§lDiscord§9§l] §c");
+                            out.append(messageAuthor.getDisplayName()).append("§r: ");
+                            out.append(messageContent);
 
-                        for (MessageAttachment attachment : messageCreateEvent.getMessageAttachments()) {
-                            out.append(" §e§n").append(attachment.getUrl()).append("§r");
+                            for (MessageAttachment attachment : messageCreateEvent.getMessageAttachments()) {
+                                out.append(" §e§n").append(attachment.getUrl()).append("§r");
+                            }
+
+                            Bukkit.broadcastMessage(out.toString());
                         }
-
-                        Bukkit.broadcastMessage(out.toString());
                     }
                 });
                 Bukkit.getScheduler().scheduleSyncRepeatingTask(AyunExtras.INSTANCE, this::sendChatQueue, 0, 20);

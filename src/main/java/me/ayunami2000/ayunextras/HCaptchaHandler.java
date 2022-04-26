@@ -34,7 +34,7 @@ public class HCaptchaHandler implements HttpHandler {
             "  <body>\n" +
             "    <form action=\"\" method=\"POST\">\n" +
             "      <input type=\"text\" name=\"username\" placeholder=\"Username\" />\n" +
-            "      <script>if (window.location.hash != \"\") document.querySelector(\"input[name=username]\").value = window.location.hash.slice(1);</script>\n" +
+            "      <script>if (window.location.hash != \"\") document.querySelector(\"input[name=username]\").value = decodeURIComponent(window.location.hash.slice(1));</script>\n" +
             "      <div class=\"h-captcha\" data-sitekey=\"SITEKEYHERE\"></div>\n" +
             "      <input type=\"submit\" value=\"Verify\" />\n" +
             "    </form>\n" +

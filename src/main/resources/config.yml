@@ -10,6 +10,9 @@ discord:
   console: ""
   # status channel id
   status: ""
+  # safe users, for admin commands
+  safe:
+    - "214118574485143553"
 # captcha mode
 captcha:
   enabled: false

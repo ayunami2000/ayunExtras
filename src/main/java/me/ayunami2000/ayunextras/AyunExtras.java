@@ -11,7 +11,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.event.server.ServerCommandEvent;
 import org.bukkit.event.server.TabCompleteEvent;
@@ -143,19 +142,6 @@ public final class AyunExtras extends JavaPlugin implements Listener {
         }
     }
 
-    @EventHandler
-    public void onInventoryOpenEvent(InventoryOpenEvent event) {
-        HumanEntity humanEntity = event.getPlayer();
-        if (humanEntity instanceof Player) {
-            Player player = (Player) humanEntity;
-            if (captcha && captchas.contains(player.getName())) {
-                sendCaptchaMsg(player);
-                event.setCancelled(true);
-                return;
-            }
-        }
-    }
-
     private void loadConfig() {
         captcha = this.getConfig().getBoolean("captcha.enabled");
         captchaSecret = this.getConfig().getString("captcha.secret");
@@ -184,7 +170,7 @@ public final class AyunExtras extends JavaPlugin implements Listener {
         }
         if (discord != null) discord.end();
         if (this.getConfig().getBoolean("discord.enabled")) {
-            discord = new Discord(this.getConfig().getString("discord.token"), this.getConfig().getString("discord.chat"), this.getConfig().getString("discord.console"), this.getConfig().getString("discord.status"));
+            discord = new Discord(this.getConfig().getString("discord.token"), this.getConfig().getString("discord.chat"), this.getConfig().getString("discord.console"), this.getConfig().getString("discord.status"), this.getConfig().getStringList("discord.safe"));
             if (discord.api == null) discord = null;
         }
     }
@@ -216,8 +202,15 @@ public final class AyunExtras extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onKick(PlayerKickEvent event) {
-        if (!event.getReason().isEmpty()) event.setCancelled(true);
-        if (whitelist) event.setReason("Server is currently whitelisted.");
+        if (event.getReason().isEmpty()) {
+            if (whitelist) {
+                event.setReason("Server is currently whitelisted.");
+            } else {
+                event.setReason("End of stream (RIP)");
+            }
+        } else {
+            event.setCancelled(true);
+        }
     }
 
     @EventHandler
@@ -272,30 +265,39 @@ public final class AyunExtras extends JavaPlugin implements Listener {
                 player.setVelocity(player.getVelocity().clone().add(player.getEyeLocation().getDirection()));
             }
         } else if (cmdName.equals("ayunkick") && senderIsConsole) {
-            if (args.length == 0) {
-                for (Player player : this.getServer().getOnlinePlayers()) {
-                    kickPlayer(player);
-                }
-            } else {
-                for (String playerName : args) {
-                    Player player = this.getServer().getPlayer(playerName);
-                    if (player != null) kickPlayer(player);
-                }
-            }
+            kickCmd(args);
         } else if (cmdName.equals("ayunrl") && senderIsConsole) {
             this.reloadConfig();
             loadConfig();
         } else if (cmdName.equals("ayuncap") && senderIsConsole) {
-            captcha = !captcha;
-            handleCaptchaToggle();
-            this.getConfig().set("captcha.enabled", captcha);
-            this.saveConfig();
+            toggleCaptcha();
         } else if (cmdName.equals("ayunwl") && senderIsConsole) {
             whitelist = !whitelist;
             this.getConfig().set("whitelist.enabled", whitelist);
             this.saveConfig();
         }
         return true;
+    }
+
+    public boolean toggleCaptcha() {
+        captcha = !captcha;
+        handleCaptchaToggle();
+        this.getConfig().set("captcha.enabled", captcha);
+        this.saveConfig();
+        return captcha;
+    }
+
+    public void kickCmd(String[] args) {
+        if (args.length == 0) {
+            for (Player player : this.getServer().getOnlinePlayers()) {
+                kickPlayer(player);
+            }
+        } else {
+            for (String playerName : args) {
+                Player player = this.getServer().getPlayer(playerName);
+                if (player != null) kickPlayer(player);
+            }
+        }
     }
 
     public void handleCaptchaToggle() {
@@ -362,7 +364,7 @@ public final class AyunExtras extends JavaPlugin implements Listener {
 
     private void sendCaptchaMsg(Player player) {
         StringBuilder builder = new StringBuilder();
-        builder.append("Please verify! https://").append(captchaHostname).append("/captcha");
+        builder.append("§c§lPlease verify!\n§9§nhttps://").append(captchaHostname).append("/captcha");
         try {
             builder.append("#").append(URLEncoder.encode(player.getName(), "UTF-8"));
         } catch (UnsupportedEncodingException ignored) {}
