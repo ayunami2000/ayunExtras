@@ -11,7 +11,17 @@ discord:
   # status channel id
   status: ""
 # captcha mode
-captcha: false
+captcha:
+  enabled: false
+  port: 8765
+  secret: ""
+  hostname: ""
+  sitekey: ""
+# whitelist
+whitelist:
+  enabled: false
+  users:
+    - "ayunami2000"
 # regex kick chats
 kickChats:
   - "dsc\\(?.\\(?gg\\/(?:2ch|matrix_v2)"

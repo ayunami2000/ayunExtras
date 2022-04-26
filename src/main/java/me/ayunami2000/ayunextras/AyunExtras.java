@@ -5,13 +5,21 @@ import org.bukkit.GameMode;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.event.server.ServerCommandEvent;
+import org.bukkit.event.server.TabCompleteEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -29,7 +37,14 @@ public final class AyunExtras extends JavaPlugin implements Listener {
     private final Set<Pattern> blockNames = new HashSet<>();
 
     private boolean captcha = true;
-    private Set<Captcha> captchas = new HashSet<>();
+    private String captchaSecret = "";
+    private String captchaHostname = "";
+    private String captchaSiteKey = "";
+    private int captchaPort = 8765;
+    public Set<String> captchas = new HashSet<>();
+
+    private boolean whitelist = false;
+    private List<String> whitelisted = new ArrayList<>();
 
     public static AyunExtras INSTANCE;
 
@@ -41,12 +56,14 @@ public final class AyunExtras extends JavaPlugin implements Listener {
     @Override
     public void onEnable() {
         this.saveDefaultConfig();
+        this.getConfig().addDefault("captcha.port", 8765);
         loadConfig();
         this.getServer().getPluginManager().registerEvents(this, this);
         this.getCommand("boost").setExecutor(this);
         this.getCommand("ayunkick").setExecutor(this);
         this.getCommand("ayunrl").setExecutor(this);
         this.getCommand("ayuncap").setExecutor(this);
+        this.getCommand("ayunwl").setExecutor(this);
         this.getServer().getScheduler().scheduleSyncDelayedTask(this, () -> this.getServer().broadcastMessage("§d§lServer will restart in §9§l§n15§d§l minutes!"), (3 * 60 + 45) * 60 * 20);
         this.getServer().getScheduler().scheduleSyncDelayedTask(this, () -> this.getServer().broadcastMessage("§d§lServer will restart in §9§l§n10§d§l minutes!"), (3 * 60 + 50) * 60 * 20);
         this.getServer().getScheduler().scheduleSyncDelayedTask(this, () -> this.getServer().broadcastMessage("§d§lServer will restart in §9§l§n5§d§l minutes!"), (3 * 60 + 55) * 60 * 20);
@@ -56,12 +73,100 @@ public final class AyunExtras extends JavaPlugin implements Listener {
     }
 
     private void kickPlayer(Player player) {
-        Bukkit.getScheduler().scheduleSyncDelayedTask(AyunExtras.INSTANCE, () -> player.kickPlayer(""));
+        if (this.getServer().isPrimaryThread()) {
+            player.kickPlayer("");
+        } else {
+            Bukkit.getScheduler().scheduleSyncDelayedTask(AyunExtras.INSTANCE, () -> player.kickPlayer(""));
+        }
+    }
+
+    @EventHandler
+    public void onPlayerInteract(PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+        if (captcha && captchas.contains(player.getName())) {
+            sendCaptchaMsg(player);
+            event.setCancelled(true);
+            return;
+        }
+    }
+
+    @EventHandler
+    public void onBlockBreak(BlockBreakEvent event) {
+        Player player = event.getPlayer();
+        if (captcha && captchas.contains(player.getName())) {
+            sendCaptchaMsg(player);
+            event.setCancelled(true);
+            return;
+        }
+    }
+
+    @EventHandler
+    public void onPlayerEntityInteract(PlayerInteractEntityEvent event) {
+        Player player = event.getPlayer();
+        if (captcha && captchas.contains(player.getName())) {
+            sendCaptchaMsg(player);
+            event.setCancelled(true);
+            return;
+        }
+    }
+
+    @EventHandler
+    public void onPlayerMove(PlayerMoveEvent event) {
+        Player player = event.getPlayer();
+        if (captcha && captchas.contains(player.getName())) {
+            sendCaptchaMsg(player);
+            event.setCancelled(true);
+            return;
+        }
+    }
+
+    @EventHandler
+    public void onPlayerDropItem(PlayerDropItemEvent event) {
+        Player player = event.getPlayer();
+        if (captcha && captchas.contains(player.getName())) {
+            sendCaptchaMsg(player);
+            event.setCancelled(true);
+            return;
+        }
+    }
+
+    @EventHandler
+    public void onInventoryClickEvent(InventoryClickEvent event) {
+        HumanEntity humanEntity = event.getWhoClicked();
+        if (humanEntity instanceof Player) {
+            Player player = (Player) humanEntity;
+            if (captcha && captchas.contains(player.getName())) {
+                sendCaptchaMsg(player);
+                event.setCancelled(true);
+                return;
+            }
+        }
+    }
+
+    @EventHandler
+    public void onInventoryOpenEvent(InventoryOpenEvent event) {
+        HumanEntity humanEntity = event.getPlayer();
+        if (humanEntity instanceof Player) {
+            Player player = (Player) humanEntity;
+            if (captcha && captchas.contains(player.getName())) {
+                sendCaptchaMsg(player);
+                event.setCancelled(true);
+                return;
+            }
+        }
     }
 
     private void loadConfig() {
-        captcha = this.getConfig().getBoolean("captcha");
+        captcha = this.getConfig().getBoolean("captcha.enabled");
+        captchaSecret = this.getConfig().getString("captcha.secret");
+        captchaHostname = this.getConfig().getString("captcha.hostname");
+        captchaSiteKey = this.getConfig().getString("captcha.sitekey");
+        captchaPort = this.getConfig().getInt("captcha.port");
         if (!captcha) captchas.clear();
+        handleCaptchaToggle();
+        whitelist = this.getConfig().getBoolean("whitelist.enabled");
+        whitelisted.clear();
+        whitelisted = this.getConfig().getStringList("whitelist.users");
         kickChats.clear();
         List<String> kickChatsRaw = this.getConfig().getStringList("kickChats");
         for (String kickChatRaw : kickChatsRaw) {
@@ -85,12 +190,17 @@ public final class AyunExtras extends JavaPlugin implements Listener {
     }
 
     @EventHandler
-    public void onPlayerLogin(PlayerLoginEvent event) {
-        String playerName = event.getPlayer().getName();
+    public void onPlayerLogin(AsyncPlayerPreLoginEvent event) {
+        String playerName = event.getName();
+        if (whitelist && !whitelisted.contains(playerName)) {
+            event.setKickMessage("");
+            event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, "");
+            return;
+        }
         for (Pattern blockName : blockNames) {
             if (blockName.matcher(playerName).matches()) {
-                kickPlayer(event.getPlayer());
-                event.disallow(PlayerLoginEvent.Result.KICK_OTHER, "");
+                event.setKickMessage("");
+                event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, "");
             }
         }
     }
@@ -98,6 +208,7 @@ public final class AyunExtras extends JavaPlugin implements Listener {
     @Override
     public void onDisable() {
         this.getServer().getScheduler().cancelTasks(this);
+        HCaptchaHandler.stop();
         if (discord != null) {
             discord.end();
         }
@@ -106,12 +217,18 @@ public final class AyunExtras extends JavaPlugin implements Listener {
     @EventHandler
     public void onKick(PlayerKickEvent event) {
         if (!event.getReason().isEmpty()) event.setCancelled(true);
+        if (whitelist) event.setReason("Server is currently whitelisted.");
     }
 
     @EventHandler
     public void onPlayerChat(AsyncPlayerChatEvent event) {
         Player player = event.getPlayer();
-        if (!captchaChecker(player, event.getMessage())) {
+        if (whitelist && !whitelisted.contains(player.getName())) {
+            event.setCancelled(true);
+            return;
+        }
+        if (captcha && captchas.contains(player.getName())) {
+            sendCaptchaMsg(player);
             event.setCancelled(true);
             return;
         }
@@ -148,12 +265,13 @@ public final class AyunExtras extends JavaPlugin implements Listener {
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
         String cmdName = cmd.getName();
+        boolean senderIsConsole = sender instanceof ConsoleCommandSender;
         if (cmdName.equals("boost")) {
             if (sender instanceof Player) {
                 Player player = (Player) sender;
                 player.setVelocity(player.getVelocity().clone().add(player.getEyeLocation().getDirection()));
             }
-        } else if (cmdName.equals("ayunkick") && sender instanceof ConsoleCommandSender) {
+        } else if (cmdName.equals("ayunkick") && senderIsConsole) {
             if (args.length == 0) {
                 for (Player player : this.getServer().getOnlinePlayers()) {
                     kickPlayer(player);
@@ -164,44 +282,55 @@ public final class AyunExtras extends JavaPlugin implements Listener {
                     if (player != null) kickPlayer(player);
                 }
             }
-        } else if (cmdName.equals("ayunrl") && sender instanceof ConsoleCommandSender) {
+        } else if (cmdName.equals("ayunrl") && senderIsConsole) {
             this.reloadConfig();
             loadConfig();
-        } else if (cmdName.equals("ayuncap") && sender instanceof ConsoleCommandSender) {
+        } else if (cmdName.equals("ayuncap") && senderIsConsole) {
             captcha = !captcha;
-            this.getConfig().set("captcha", captcha);
+            handleCaptchaToggle();
+            this.getConfig().set("captcha.enabled", captcha);
+            this.saveConfig();
+        } else if (cmdName.equals("ayunwl") && senderIsConsole) {
+            whitelist = !whitelist;
+            this.getConfig().set("whitelist.enabled", whitelist);
             this.saveConfig();
         }
         return true;
     }
 
-    private boolean captchaChecker(Player player, String msg) {
+    public void handleCaptchaToggle() {
         if (captcha) {
-            Captcha cap = Captcha.get(captchas, player);
-            if (cap != null) {
-                if (cap.check(msg)) {
-                    if (!cap.passed1) {
-                        cap.passed1 = true;
-                        player.sendMessage("1/2 cap done");
-                    } else {
-                        captchas.remove(cap);
-                        Bukkit.getScheduler().scheduleSyncDelayedTask(this, () -> player.setGameMode(GameMode.CREATIVE));
-                        player.sendMessage("you may now play on the server!");
-                    }
-                } else {
-                    captchas.remove(cap); // might need to be run after the kick which is delayed
-                    kickPlayer(player);
-                }
-                return false;
+            try {
+                HCaptchaHandler.create(captchaSecret, captchaHostname, captchaSiteKey, captchaPort);
+            } catch (Exception e) {
+                e.printStackTrace();
+                captcha = false;
+                return;
+            }
+        } else {
+            HCaptchaHandler.stop();
+        }
+    }
+
+    @EventHandler
+    public void onTabComplete(TabCompleteEvent event) {
+        CommandSender sender = event.getSender();
+        if (sender instanceof Player) {
+            if (captcha && captchas.contains(sender.getName())) {
+                event.setCancelled(true);
             }
         }
-        return true;
     }
 
     @EventHandler
     public void onPlayerCommand(PlayerCommandPreprocessEvent event) {
         Player player = event.getPlayer();
-        if (!captchaChecker(player, event.getMessage())) {
+        if (whitelist && !whitelisted.contains(player.getName())) {
+            event.setCancelled(true);
+            return;
+        }
+        if (captcha && captchas.contains(player.getName())) {
+            sendCaptchaMsg(player);
             event.setCancelled(true);
             return;
         }
@@ -228,7 +357,16 @@ public final class AyunExtras extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onPlayerGameModeChange(PlayerGameModeChangeEvent event) {
-        if (captcha && Captcha.get(captchas, event.getPlayer()) != null) event.setCancelled(true);
+        if (captcha && captchas.contains(event.getPlayer().getName())) event.setCancelled(true);
+    }
+
+    private void sendCaptchaMsg(Player player) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("Please verify! https://").append(captchaHostname).append("/captcha");
+        try {
+            builder.append("#").append(URLEncoder.encode(player.getName(), "UTF-8"));
+        } catch (UnsupportedEncodingException ignored) {}
+        player.sendMessage(builder.toString());
     }
 
     @EventHandler
@@ -236,7 +374,8 @@ public final class AyunExtras extends JavaPlugin implements Listener {
         Player player = event.getPlayer();
         if (captcha) {
             player.setGameMode(GameMode.SPECTATOR);
-            captchas.add(new Captcha(player));
+            sendCaptchaMsg(player);
+            captchas.add(player.getName());
         } else {
             player.setGameMode(GameMode.CREATIVE);
         }

@@ -18,3 +18,6 @@ commands:
   ayuncap:
     description: toggle captcha mode
     usage: /<command>
+  ayunwl:
+    description: toggle whitelist
+    usage: /<command>
