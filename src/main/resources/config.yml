@@ -32,7 +32,7 @@ kickChats:
   - "vk com\\/amonitcraft"
 # regex block chats
 blockChats:
-  - "@e"
+  - "(say|tellraw|title|bossbar).*@e"
   - "@a.*@a.*@a"
   - "^\\/?(?:essentials:)?e?sudo \\*"
 # regex blocked usernames
