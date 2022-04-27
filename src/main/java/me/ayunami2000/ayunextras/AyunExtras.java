@@ -375,6 +375,7 @@ public final class AyunExtras extends JavaPlugin implements Listener {
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         if (captcha) {
+            event.setJoinMessage(null);
             player.setGameMode(GameMode.SPECTATOR);
             sendCaptchaMsg(player);
             captchas.add(player.getName());
@@ -382,6 +383,17 @@ public final class AyunExtras extends JavaPlugin implements Listener {
             player.setGameMode(GameMode.CREATIVE);
         }
         player.getInventory().clear();
+    }
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        Player player = event.getPlayer();
+        if (captcha) {
+            if (captchas.contains(player.getName())) {
+                event.setQuitMessage(null);
+                captchas.remove(player.getName());
+            }
+        }
     }
 
     private boolean isIllegal(String cmd) {

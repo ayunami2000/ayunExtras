@@ -97,12 +97,13 @@ public class HCaptchaHandler implements HttpHandler {
             if (params.containsKey("username") && params.containsKey("h-captcha-response")) {
                 String uname = params.get("username");
                 String key = params.get("h-captcha-response");
-                Player player = AyunExtras.INSTANCE.getServer().getPlayerExact(uname);
+                Player player = Bukkit.getPlayerExact(uname);
                 if (player != null && player.isOnline() && AyunExtras.INSTANCE.captchas.contains(player.getName())) {
                     if (check(key)) {
                         AyunExtras.INSTANCE.captchas.remove(player.getName());
                         player.sendMessage("You are now verified!");
                         Bukkit.getScheduler().scheduleSyncDelayedTask(AyunExtras.INSTANCE, () -> player.setGameMode(GameMode.CREATIVE));
+                        Bukkit.broadcastMessage("§e" + player.getName() + "§e verified and joined the game");
                     }
                 }
             }
