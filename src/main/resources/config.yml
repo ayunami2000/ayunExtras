@@ -32,9 +32,19 @@ kickChats:
   - "vk com\\/amonitcraft"
 # regex block chats
 blockChats:
-  - "@e"
-  - "@a.*@a.*@a"
-  - "^\\/?(?:essentials:)?e?sudo \\*"
+- '(?:say|tellraw|title|bossbar).*@e'
+- '@a.*@a.*@a'
+- '@r\[[^\]]*limit=\d+[^\]]*\]'
+- ^\/?(?:minecraft:)?execute.*data entity.*run
+- ^\/?(?:essentials:)?e?sudo \*
+- '^\/?(?:minecraft:)?clone '
+- '^\/?(?:minecraft:)?execute .*run clone '
+- ^\/?(?:minecraft:)?kill @a
+- ^\/?(?:minecraft:)?gamemode .*@a
+- '^\/?(?:essentials:)?e?(?:adventure|adventuremode|creative|ecreative|creativemode|gamemode|gm|gma|gmc|gms|gmt|survival|survivalmode|gmsp) .*\*'
+- ^\/?(?:essentials:)?e?kill \*
+- '^\/?(?:essentials:)?e?(bc|bcast|broadcast|shout) (.*\\n){4,}'
+- '^\/?(?:minecraft:)?deop @a'
 # regex blocked usernames
 blockUsernames:
   - "\\d{10}"
