@@ -14,6 +14,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.event.server.ServerCommandEvent;
 import org.bukkit.event.server.TabCompleteEvent;
+import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.UnsupportedEncodingException;
@@ -213,6 +214,15 @@ public final class AyunExtras extends JavaPlugin implements Listener {
         }
     }
 
+    private boolean checkCapCount(Player player) {
+        if (!player.hasMetadata("ayunCaptchaCount")) {
+            player.setMetadata("ayunCaptchaCount", new FixedMetadataValue(this, 0));
+        }
+        int capCount = player.getMetadata("ayunCaptchaCount").get(0).asInt();
+        player.setMetadata("ayunCaptchaCount", new FixedMetadataValue(this, capCount + 1));
+        return capCount >= 3;
+    }
+
     @EventHandler
     public void onPlayerChat(AsyncPlayerChatEvent event) {
         Player player = event.getPlayer();
@@ -221,6 +231,11 @@ public final class AyunExtras extends JavaPlugin implements Listener {
             return;
         }
         if (captcha && captchas.contains(player.getName())) {
+            if (checkCapCount(player)) {
+                kickPlayer(player);
+                event.setCancelled(true);
+                return;
+            }
             sendCaptchaMsg(player);
             event.setCancelled(true);
             return;
@@ -332,6 +347,11 @@ public final class AyunExtras extends JavaPlugin implements Listener {
             return;
         }
         if (captcha && captchas.contains(player.getName())) {
+            if (checkCapCount(player)) {
+                kickPlayer(player);
+                event.setCancelled(true);
+                return;
+            }
             sendCaptchaMsg(player);
             event.setCancelled(true);
             return;
