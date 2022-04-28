@@ -225,6 +225,10 @@ public final class AyunExtras extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onPlayerChat(AsyncPlayerChatEvent event) {
+        if (event.getMessage().isEmpty()) {
+            event.setCancelled(true);
+            return;
+        }
         Player player = event.getPlayer();
         if (whitelist && !whitelisted.contains(player.getName())) {
             event.setCancelled(true);
