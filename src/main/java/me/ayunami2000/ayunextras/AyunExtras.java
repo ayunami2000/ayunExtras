@@ -178,6 +178,12 @@ public final class AyunExtras extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onPlayerLogin(AsyncPlayerPreLoginEvent event) {
+        if (getServer().getOnlinePlayers().size() >= getServer().getMaxPlayers()) {
+            event.setKickMessage("");
+            event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, "");
+            return;
+        }
+
         String playerName = event.getName();
         if (whitelist && !whitelisted.contains(playerName)) {
             event.setKickMessage("");
