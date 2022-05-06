@@ -19,10 +19,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -31,6 +28,8 @@ public final class AyunExtras extends JavaPlugin implements Listener {
     private static final Pattern transMatch2 = Pattern.compile("[\"']translate[\"']:'(?:(?:[^'\\\\])|\\\\.)*'", Pattern.CASE_INSENSITIVE);
 
     private Discord discord = null;
+
+    private String kickKey = getSaltString(256);
 
     private final Set<Pattern> kickChats = new HashSet<>();
     private final Set<Pattern> blockChats = new HashSet<>();
@@ -72,11 +71,24 @@ public final class AyunExtras extends JavaPlugin implements Listener {
         this.getServer().getScheduler().scheduleSyncDelayedTask(this, () -> this.getServer().broadcastMessage("§d§lServer will restart §9§l§nany time now§d§l!"), 4 * 60 * 60 * 20);
     }
 
+    public static String getSaltString(int len) {
+        String SALTCHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
+        StringBuilder salt = new StringBuilder();
+        Random rnd = new Random();
+        while (salt.length() < len) {
+            int index = (int) (rnd.nextFloat() * SALTCHARS.length());
+            salt.append(SALTCHARS.charAt(index));
+        }
+        String saltStr = salt.toString();
+        return saltStr;
+
+    }
+
     private void kickPlayer(Player player) {
         if (this.getServer().isPrimaryThread()) {
-            player.kickPlayer("");
+            player.kickPlayer(kickKey);
         } else {
-            Bukkit.getScheduler().scheduleSyncDelayedTask(AyunExtras.INSTANCE, () -> player.kickPlayer(""));
+            Bukkit.getScheduler().scheduleSyncDelayedTask(AyunExtras.INSTANCE, () -> player.kickPlayer(kickKey));
         }
     }
 
@@ -144,6 +156,7 @@ public final class AyunExtras extends JavaPlugin implements Listener {
     }
 
     private void loadConfig() {
+        kickKey = getSaltString(256);
         captcha = this.getConfig().getBoolean("captcha.enabled");
         captchaSecret = this.getConfig().getString("captcha.secret");
         captchaHostname = this.getConfig().getString("captcha.hostname");
@@ -179,21 +192,21 @@ public final class AyunExtras extends JavaPlugin implements Listener {
     @EventHandler
     public void onPlayerLogin(AsyncPlayerPreLoginEvent event) {
         if (getServer().getOnlinePlayers().size() >= getServer().getMaxPlayers()) {
-            event.setKickMessage("");
-            event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, "");
+            event.setKickMessage(kickKey);
+            event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, kickKey);
             return;
         }
 
         String playerName = event.getName();
         if (whitelist && !whitelisted.contains(playerName)) {
-            event.setKickMessage("");
-            event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, "");
+            event.setKickMessage(kickKey);
+            event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, kickKey);
             return;
         }
         for (Pattern blockName : blockNames) {
             if (blockName.matcher(playerName).matches()) {
-                event.setKickMessage("");
-                event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, "");
+                event.setKickMessage(kickKey);
+                event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, kickKey);
             }
         }
     }
@@ -209,7 +222,7 @@ public final class AyunExtras extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onKick(PlayerKickEvent event) {
-        if (event.getReason().isEmpty()) {
+        if (event.getReason().equals(kickKey)) {
             if (whitelist) {
                 event.setReason("Server is currently whitelisted.");
             } else {
