@@ -441,19 +441,27 @@ public final class AyunExtras extends JavaPlugin implements Listener {
         Matcher matcher2 = transMatch2.matcher(trimMsg);
         boolean illegal = false;
         while (matcher1.find()) {
+            illegal = true;
+            break;
+            /*
             String match = matcher1.group();
             if (match.toLowerCase().contains("translation.test.") || match.contains("%")) {
                 illegal = true;
                 break;
             }
+            */
         }
         if (!illegal) {
             while (matcher2.find()) {
+                illegal = true;
+                break;
+                /*
                 String match = matcher2.group();
                 if (match.toLowerCase().contains("translation.test.") || match.contains("%")) {
                     illegal = true;
                     break;
                 }
+                */
             }
         }
         return illegal;
