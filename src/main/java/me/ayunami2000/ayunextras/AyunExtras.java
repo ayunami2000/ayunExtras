@@ -442,7 +442,7 @@ public final class AyunExtras extends JavaPlugin implements Listener {
         boolean illegal = false;
         while (matcher1.find()) {
             String match = matcher1.group();
-            if (match.toLowerCase().contains("translation.test.invalid") || match.contains("%")) {
+            if (match.toLowerCase().contains("translation.test.") || match.contains("%")) {
                 illegal = true;
                 break;
             }
@@ -450,7 +450,7 @@ public final class AyunExtras extends JavaPlugin implements Listener {
         if (!illegal) {
             while (matcher2.find()) {
                 String match = matcher2.group();
-                if (match.toLowerCase().contains("translation.test.invalid") || match.contains("%")) {
+                if (match.toLowerCase().contains("translation.test.") || match.contains("%")) {
                     illegal = true;
                     break;
                 }
