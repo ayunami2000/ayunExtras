@@ -24,8 +24,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class AyunExtras extends JavaPlugin implements Listener {
-    private static final Pattern transMatch1 = Pattern.compile("\\?[\"']translate\\?[\"']:\\?\"(?:(?:[^\"\\\\])|\\\\.)*\\?\"", Pattern.CASE_INSENSITIVE);
-    private static final Pattern transMatch2 = Pattern.compile("\\?[\"']translate\\?[\"']:\\?'(?:(?:[^'\\\\])|\\\\.)*\\?'", Pattern.CASE_INSENSITIVE);
+    private static final Pattern transMatch1 = Pattern.compile("\\\\?[\"']translate\\?[\"']:\\?\"(?:[^\"\\\\]|\\\\.)*\\\\?\"", Pattern.CASE_INSENSITIVE);
+    private static final Pattern transMatch2 = Pattern.compile("\\\\?[\"']translate\\?[\"']:\\?'(?:[^'\\\\]|\\\\.)*\\\\?'", Pattern.CASE_INSENSITIVE);
 
     private Discord discord = null;
 
