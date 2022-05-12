@@ -39,6 +39,10 @@ public class Discord {
                                 case "kickall":
                                     if (safeUsers.contains(messageAuthor.getIdAsString())) AyunExtras.INSTANCE.kickCmd(Arrays.copyOfRange(pieces, 1, pieces.length));
                                     break;
+                                case "kr":
+                                case "kickregex":
+                                    if (safeUsers.contains(messageAuthor.getIdAsString())) AyunExtras.INSTANCE.kickRegexCmd(Arrays.copyOfRange(pieces, 1, pieces.length));
+                                    break;
                                 case "cap":
                                 case "captcha":
                                     if (safeUsers.contains(messageAuthor.getIdAsString())) messageCreateEvent.getMessage().reply("**Captchas are now " + (AyunExtras.INSTANCE.toggleCaptcha() ? "en" : "dis") + "abled.**");

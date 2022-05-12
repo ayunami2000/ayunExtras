@@ -29,7 +29,7 @@ public final class AyunExtras extends JavaPlugin implements Listener {
 
     private Discord discord = null;
 
-    private String kickKey = getSaltString(256);
+    private Set<String> kickPlayerNames = new HashSet<>();
 
     private final Set<Pattern> kickChats = new HashSet<>();
     private final Set<Pattern> blockChats = new HashSet<>();
@@ -71,24 +71,15 @@ public final class AyunExtras extends JavaPlugin implements Listener {
         this.getServer().getScheduler().scheduleSyncDelayedTask(this, () -> this.getServer().broadcastMessage("§d§lServer will restart §9§l§nany time now§d§l!"), 4 * 60 * 60 * 20);
     }
 
-    public static String getSaltString(int len) {
-        String SALTCHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
-        StringBuilder salt = new StringBuilder();
-        Random rnd = new Random();
-        while (salt.length() < len) {
-            int index = (int) (rnd.nextFloat() * SALTCHARS.length());
-            salt.append(SALTCHARS.charAt(index));
-        }
-        String saltStr = salt.toString();
-        return saltStr;
-
-    }
-
     private void kickPlayer(Player player) {
         if (this.getServer().isPrimaryThread()) {
-            player.kickPlayer(kickKey);
+            kickPlayerNames.add(player.getName());
+            player.kickPlayer("");
         } else {
-            Bukkit.getScheduler().scheduleSyncDelayedTask(AyunExtras.INSTANCE, () -> player.kickPlayer(kickKey));
+            Bukkit.getScheduler().scheduleSyncDelayedTask(AyunExtras.INSTANCE, () -> {
+                kickPlayerNames.add(player.getName());
+                player.kickPlayer("");
+            });
         }
     }
 
@@ -156,7 +147,6 @@ public final class AyunExtras extends JavaPlugin implements Listener {
     }
 
     private void loadConfig() {
-        kickKey = getSaltString(256);
         captcha = this.getConfig().getBoolean("captcha.enabled");
         captchaSecret = this.getConfig().getString("captcha.secret");
         captchaHostname = this.getConfig().getString("captcha.hostname");
@@ -191,22 +181,26 @@ public final class AyunExtras extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onPlayerLogin(AsyncPlayerPreLoginEvent event) {
+        String playerName = event.getName();
+
         if (getServer().getOnlinePlayers().size() >= getServer().getMaxPlayers()) {
-            event.setKickMessage(kickKey);
-            event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, kickKey);
+            kickPlayerNames.add(playerName);
+            event.setKickMessage("Server is full!");
+            event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, "Server is full!");
             return;
         }
 
-        String playerName = event.getName();
         if (whitelist && !whitelisted.contains(playerName)) {
-            event.setKickMessage(kickKey);
-            event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, kickKey);
+            kickPlayerNames.add(playerName);
+            event.setKickMessage("Server is currently whitelisted.");
+            event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, "Server is currently whitelisted.");
             return;
         }
         for (Pattern blockName : blockNames) {
             if (blockName.matcher(playerName).matches()) {
-                event.setKickMessage(kickKey);
-                event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, kickKey);
+                kickPlayerNames.add(playerName);
+                event.setKickMessage("Illegal name!");
+                event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, "Illegal name!");
             }
         }
     }
@@ -222,12 +216,9 @@ public final class AyunExtras extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onKick(PlayerKickEvent event) {
-        if (event.getReason().equals(kickKey)) {
-            if (whitelist) {
-                event.setReason("Server is currently whitelisted.");
-            } else {
-                event.setReason("End of stream (RIP)");
-            }
+        String n = event.getPlayer().getName();
+        if (kickPlayerNames.contains(n)) {
+            kickPlayerNames.remove(n);
         } else {
             event.setCancelled(true);
         }
@@ -300,6 +291,8 @@ public final class AyunExtras extends JavaPlugin implements Listener {
             }
         } else if (cmdName.equals("ayunkick") && senderIsConsole) {
             kickCmd(args);
+        } else if (cmdName.equals("ayunkickregex") && senderIsConsole) {
+            kickRegexCmd(args);
         } else if (cmdName.equals("ayunrl") && senderIsConsole) {
             this.reloadConfig();
             loadConfig();
@@ -332,6 +325,11 @@ public final class AyunExtras extends JavaPlugin implements Listener {
                 if (player != null) kickPlayer(player);
             }
         }
+    }
+
+    public void kickRegexCmd(String[] args) {
+        String regexFull = String.join(" ", args);
+        this.getServer().getOnlinePlayers().stream().filter(player -> player.getName().matches(regexFull)).forEach(this::kickPlayer);
     }
 
     public void handleCaptchaToggle() {
