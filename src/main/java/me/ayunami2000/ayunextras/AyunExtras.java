@@ -179,7 +179,7 @@ public final class AyunExtras extends JavaPlugin implements Listener {
     public void onPlayerLogin(AsyncPlayerPreLoginEvent event) {
         String playerName = event.getName();
 
-        if (getServer().getOnlinePlayers().size() >= getServer().getMaxPlayers()) {
+        if (getServer().getOnlinePlayers().size() >= getServer().getMaxPlayers() - captchas.size()) {
             kickPlayerNames.add(playerName);
             event.setKickMessage("Server is full!");
             event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, "Server is full!");
