@@ -20,13 +20,9 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.*;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class AyunExtras extends JavaPlugin implements Listener {
-    private static final Pattern transMatch1 = Pattern.compile("\\\\?[\"']translate\\\\?[\"']:\\\\?\"(?:[^\"\\\\]|\\\\.)*\\\\?\"", Pattern.CASE_INSENSITIVE);
-    private static final Pattern transMatch2 = Pattern.compile("\\\\?[\"']translate\\\\?[\"']:\\\\?'(?:[^\"\\\\]|\\\\.)*\\\\?'", Pattern.CASE_INSENSITIVE);
-
     private Discord discord = null;
 
     private Set<String> kickPlayerNames = new HashSet<>();
@@ -382,7 +378,6 @@ public final class AyunExtras extends JavaPlugin implements Listener {
             event.setCancelled(true);
             return;
         }
-        if (isIllegal(event.getMessage())) event.setCancelled(true);
     }
 
     @EventHandler
@@ -391,7 +386,6 @@ public final class AyunExtras extends JavaPlugin implements Listener {
             event.setCancelled(true);
             return;
         }
-        if (isIllegal(event.getCommand())) event.setCancelled(true);
     }
 
     @EventHandler
@@ -431,38 +425,6 @@ public final class AyunExtras extends JavaPlugin implements Listener {
                 captchas.remove(player.getName());
             }
         }
-    }
-
-    private boolean isIllegal(String cmd) {
-        String trimMsg = parseCharCodes(cmd.replace(" ",""));
-        Matcher matcher1 = transMatch1.matcher(trimMsg);
-        Matcher matcher2 = transMatch2.matcher(trimMsg);
-        boolean illegal = false;
-        while (matcher1.find()) {
-            illegal = true;
-            break;
-            /*
-            String match = matcher1.group();
-            if (match.toLowerCase().contains("translation.test.") || match.contains("%")) {
-                illegal = true;
-                break;
-            }
-            */
-        }
-        if (!illegal) {
-            while (matcher2.find()) {
-                illegal = true;
-                break;
-                /*
-                String match = matcher2.group();
-                if (match.toLowerCase().contains("translation.test.") || match.contains("%")) {
-                    illegal = true;
-                    break;
-                }
-                */
-            }
-        }
-        return illegal;
     }
 
     // from kaboom extras
