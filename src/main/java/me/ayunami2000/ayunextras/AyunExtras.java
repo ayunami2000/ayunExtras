@@ -1,5 +1,6 @@
 package me.ayunami2000.ayunextras;
 
+import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.command.Command;
@@ -20,6 +21,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.*;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class AyunExtras extends JavaPlugin implements Listener {
@@ -30,6 +32,8 @@ public final class AyunExtras extends JavaPlugin implements Listener {
     private final Set<Pattern> kickChats = new HashSet<>();
     private final Set<Pattern> blockChats = new HashSet<>();
     private final Set<Pattern> blockNames = new HashSet<>();
+
+    private final Pattern HEX_CHAT_PATTERN = Pattern.compile("&#[0-9a-fA-F]{6}");
 
     private boolean captcha = true;
     private String captchaSecret = "";
@@ -255,9 +259,20 @@ public final class AyunExtras extends JavaPlugin implements Listener {
             event.setCancelled(true);
             return;
         }
+
+        event.setMessage(formatHex(event.getMessage()));
+
         if (discord != null) {
             discord.sendChat(player.getName(), event.getMessage());
         }
+    }
+
+    private String formatHex(String in) {
+        Matcher matcher = HEX_CHAT_PATTERN.matcher(in);
+        while (matcher.find()) {
+            in = in.replace(matcher.group(), "" + ChatColor.of(matcher.group().substring(1)));
+        }
+        return in;
     }
 
     private boolean kickChatMatches(String in) {
