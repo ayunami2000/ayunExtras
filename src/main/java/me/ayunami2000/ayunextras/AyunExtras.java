@@ -17,6 +17,7 @@ import org.bukkit.event.server.ServerCommandEvent;
 import org.bukkit.event.server.TabCompleteEvent;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.spigotmc.WatchdogThread;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -50,6 +51,17 @@ public final class AyunExtras extends JavaPlugin implements Listener {
     @Override
     public void onLoad() {
         INSTANCE = this;
+        Thread.UncaughtExceptionHandler exh = (t, e) -> {
+            if (e instanceof OutOfMemoryError) {
+                Bukkit.getServer().shutdown();
+                if (discord != null && discord.api != null) {
+                    discord.api.getThreadPool().getScheduler().shutdownNow();
+                    discord.api.getThreadPool().getExecutorService().shutdownNow();
+                }
+            }
+        };
+        WatchdogThread.currentThread().setUncaughtExceptionHandler(exh);
+        WatchdogThread.setDefaultUncaughtExceptionHandler(exh);
     }
 
     @Override
