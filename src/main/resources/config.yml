@@ -45,6 +45,7 @@ blockChats:
 - ^\/?(?:essentials:)?e?kill \*
 - '^\/?(?:essentials:)?e?(bc|bcast|broadcast|shout) (.*\\n){4,}'
 - '^\/?(?:minecraft:)?deop @a'
+- '.*client.coffee.*'
 # regex blocked usernames
 blockUsernames:
   - "\\d{10}"
